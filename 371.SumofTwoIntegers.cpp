@@ -12,19 +12,19 @@ using namespace std;
                                { {0, 1}, {1, 1} } 
                              };
 
-        for(int i=0; i<sizeof(int)*8; i++){
+        while(bit != 0) {
             int abit = a & bit;
             int bbit = b & bit;
             abit = abit == 0 ? 0 : 1;
             bbit = bbit == 0 ? 0 : 1;
             carry = carry == 0 ? 0 : 1;
 
-            //cout <<"i=" << i << " abit=" << abit << " bbit=" << bbit << " carry=" << carry << endl;
-            if(Sum[abit][bbit][carry])  sum |= bit;
+            cout <<"bit=" << bit << " abit=" << abit << " bbit=" << bbit << " carry=" << carry << endl;
+            if((abit!=bbit)!=carry)  sum |= bit;
             else    sum &= ~bit;
             
-            carry = Carry[abit][bbit][carry];
-            //cout << sum << "\t" << carry << endl;
+            carry = (abit&&bbit)||carry;;
+            cout << sum << "\t" << carry << endl;
             bit <<= 1;
         }
         return sum;
