@@ -2,6 +2,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <string>
 using namespace std;
 
 
@@ -11,19 +12,26 @@ public:
     // add an edge to graph
     void AddEdge(char v, char w);
     // prints a Topological Sort of the complete graph
-    void TopologicalSort();
+    bool TopologicalSort();
     void PrintAdjacentList();
 private:
-    enum Status{
+    enum DFS_Status{
         kUnvisited,
         kVisiting,
         kVisited
     };
     static const int kCharNum = 256;
-    void DFS(char v, vector<Status> &visit,  vector<char> &result);
     vector<bool> V_;    // all vertices
     unordered_map<char, vector<char> > adj_; // adjacency list
 
+    /**
+     * Depth First Search
+     * @param v current vertex
+     * @param visit record the node status during DFS
+     * @param result push the visited node to result
+     * @return false if the graph has circle
+     */
+    bool DFS(char v, vector<DFS_Status> *visit, string *result);
 };
 
 Graph::Graph() : V_(kCharNum, false) {
@@ -36,31 +44,40 @@ void Graph::AddEdge(char v, char w) {
 
 }
 
-void Graph::DFS(char v, vector<Status> &visit, vector<char> &result) {
+bool Graph::DFS(char v, vector<DFS_Status> *visit,
+                string *result)
+{
     // Mark the current node as visiting.
-    visit[v] = kVisiting;
+    (*visit)[v] = kVisiting;
     // Recur for all the vertices adjacent to this vertex
     for (char u : adj_[v]) {
-        if (visit[u]==kUnvisited)    DFS(u, visit, result);
-        else if(visit[u]==kVisiting){
-            cerr << "ERROR: Circle detected! This graph is not a DAG."
+        if ((*visit)[u] == kUnvisited){
+            bool ret = DFS(u, visit, result);
+            if(!ret)  return false;
+        } else if((*visit)[u] == kVisiting){
+            cout << "ERROR: Circle detected! This graph is not a DAG."
                  << endl;
-            return;
+            return false;
         }
     }
-    visit[v] = kVisited;
+    (*visit)[v] = kVisited;
     //push the visited node to the result
-    result.push_back(v);
+    *result += v;
+    return true;
 }
 
-void Graph::TopologicalSort() {
-    vector<char> result;
+bool Graph::TopologicalSort() {
+    string result;
     // Mark all the vertices as not visit
-    vector<Status> visit(kCharNum, kUnvisited);
+    vector<DFS_Status> visit(kCharNum, kUnvisited);
     // Call the recursive helper function to store Topological Sort
     // starting from all vertices one by one
-    for (int i=0; i < kCharNum; ++i) {
-        if (V_[i] && visit[i]==kUnvisited)  DFS(i, visit, result);
+    for (int i = 0; i < kCharNum; ++i) {
+        if (V_[i] && visit[i] == kUnvisited) {
+            if(!DFS(i, &visit, &result)){
+                return false;
+            }
+        }
     }
     // Print result
     reverse(result.begin(), result.end());
@@ -68,6 +85,7 @@ void Graph::TopologicalSort() {
         cout << ch << " ";
     }
     cout << endl;
+    return true;
 }
 void Graph::PrintAdjacentList() {
     for(const auto & kv : adj_){
@@ -79,14 +97,15 @@ void Graph::PrintAdjacentList() {
 // This function fidns and prints order of characer from a sorted
 // array of words.
 void PrintOrder(const vector<string> &words)  {
-    int n = words.size();
+    const int n = words.size();
     Graph graph;
     // Process all adjacent pairs of words and create a graph
-    for (int i = 0; i < n-1; i++) {
+    for (int i = 0; i < n - 1; ++i) {
         // Take the current two words and find the first mismatching
         // character
-        string word1 = words[i], word2 = words[i+1];
-        for (int j = 0; j < min(word1.length(), word2.length()); j++){
+        const string &word1 = words[i];
+        const string &word2 = words[i + 1];
+        for (int j = 0; j < min(word1.length(), word2.length()); ++j){
             // If we find a mismatching character, then add an edge
             // from character of word1 to that of word2
             if (word1[j] != word2[j]) {
@@ -107,6 +126,8 @@ int main()
     cout << endl;
     vector<string> words1 = {"baa", "abcd", "abca", "cab", "cad"};
     PrintOrder(words1);
+    cout << endl;
+    vector<string> words2 = {"aaa", "abcd", "aba", "c" };
+    PrintOrder(words2);
     return 0;
 }
-
