@@ -1,8 +1,6 @@
 // code for Zuma Game
 // https://leetcode.com/problems/zuma-game/
-
 #include <iostream>
-#include <list>
 #include <vector>
 using namespace std;
 
@@ -12,49 +10,49 @@ struct Node{
     int count;
     Node(char c, int i) : ch(c), count(i){}
 };
-void CleanBoard(list<Node> &board){
-    auto it = board.begin();
-    while (it != board.end()) {
-        if (it->count >= 3) {
-            it = board.erase(it);
-            // Ensure iterator != end(), before you use the it
-            // Ensure iterator != begin(), before invoking prev(it)
-            if (it != board.begin() &&
-                it != board.end() &&
-                it->ch == prev(it)->ch)
-            {
-                it->count += prev(it)->count;
-                board.erase(prev(it));
-            }
+void CleanBoard(vector<Node> &board) {
+    vector<Node> stack;
+    stack.reserve(board.size()); // avoid dynamic resize
+    for (auto &node : board) {
+        // before compare stack.back with current node, stack must
+        // contain at lest 1 node
+        if (stack.size() == 0) {
+            stack.push_back(node);
         } else {
-            it++;
+            if (node.ch == stack.back().ch) {
+                stack.back().count += node.count;
+            } else {
+                stack.push_back(node);
+            }
         }
+        if (stack.back().count >= 3)  stack.pop_back();
     }
+    board.swap(stack);
 }
-int DFS(list<Node> board, vector<int> &hand, int remain_in_hand) {
+int DFS(vector<Node> board, vector<int> &hand, int remain_in_hand) {
     CleanBoard(board);
     if (board.size() == 0)  return 0;
     //cannot remove all the balls
     if (remain_in_hand <= 0)  return kMaxNeed;
     int min_need = kMaxNeed;
-    for (auto it = board.begin(); it != board.end(); ++it) {
-        int need = 3 - it->count;
-        if (hand[it->ch] >= need) {
-            hand[it->ch] -= need;
-            it->count += need;
-            list<Node> next_board = board;
-            int ret = DFS(next_board, hand, remain_in_hand - need);
+    for (auto &node : board) {
+        int need = 3 - node.count;
+        if (hand[node.ch] >= need) {
+            hand[node.ch] -= need;
+            node.count += need;
+            //board is passed by value, a copy is made implicitly.
+            int ret = DFS(board, hand, remain_in_hand - need);
             min_need = min(min_need, ret + need);
-            it->count -= need;
-            hand[it->ch] += need;
+            node.count -= need;
+            hand[node.ch] += need;
         }
     }
     return min_need;
 }
 int findMinStep(string board, string hand) {
-    list<Node> board_list;
+    vector<Node> board_list;
     vector<int> hand_count(CHAR_MAX, 0);
-    int remain_in_hand = 0;
+    int remain_in_hand = hand.size();
     for (int i = 0; i < board.length(); ++i) {
         board_list.push_back(Node(board[i], 1));
         if (i != board.length() - 1 && board[i] == board[i + 1]) {
@@ -62,12 +60,7 @@ int findMinStep(string board, string hand) {
             i++;
         }
     }
-
-    for (char ch : hand) {
-        hand_count[ch]++;
-        remain_in_hand ++;
-    }
-
+    for (char ch : hand)  hand_count[ch]++;
     int ret = DFS(board_list, hand_count, remain_in_hand);
     return ret == kMaxNeed ? -1 : ret;
 }
@@ -78,5 +71,4 @@ int main() {
     cout << findMinStep("G", "GGGGG") << endl; // 2
     cout << findMinStep("RBYYBBRRB", "YRBGB") << endl; // 3
 }
-
 
